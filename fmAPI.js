@@ -1,109 +1,110 @@
-// fmAPI.js
-window.fmAPI = {}; // make fmAPI globally accessible
-window.fmAPI_config = {}; // fmAPI configuration, look up documentation
-window.fmAPI_config.version = "PunBB"; // in our case, this is PunBB
-window.fmAPI.setProperty = function(prop,val){ // basic set method
-	window.fmAPI[prop]=val;
-	return window.fmAPI;
-};
-window.fmAPI.getProperty = function(prop){ // basic get method
-	return window.fmAPI[prop];
-};
-window.fmAPI._getPageData = function(){ // gather page data
-	window.fmAPI._pageDetails = {};
-	var curPage = window.location.pathname;
-	if( curPage === "/" ) { // home page
-		window.fmAPI._pageDetails.current = "Home";
-	} else { // not home page, eliminate / from URL
-		curPage = curPage.substr( curPage.indexOf("/") + 1 );
-		if( curPage === "search" ) { // search page
-			window.fmAPI._pageDetails.current = "Search Page";
-		} else if( curPage === "portal" ) { // forum portal
-			window.fmAPI._pageDetails.current = "Forum Portal";
-		} else if( curPage === "faq" ) { // FAQ
-			window.fmAPI._pageDetails.current = "FAQ";
-		} else if( curPage === "memberlist" ) { // forum memberlist
-			window.fmAPI._pageDetails.current = "Forum Memberlist";
-		} else if( curPage === "groups" ) { // forum groups
-			window.fmAPI._pageDetails.current = "Forum Groups";
-		} else if( curPage === "profile" ) { // profile page
-			window.fmAPI._pageDetails.current = "Profile Page";
-		} else if( curPage === "privmsg" ) { // private messages
-			window.fmAPI._pageDetails.current = "Private Messages";
-		} else if( curPage === "login" ) { // login page
-			window.fmAPI._pageDetails.current = "Login Page";
-		} else if( curPage === "post" ) { // post
-			window.fmAPI._pageDetails.current = "Post";
-		} else if( curPage === "chatbox" ) { // chatbox; global JS doesn't apply to it, but I provide it, anyway
-			window.fmAPI._pageDetails.current = "Chatbox";
-		} else { // not specifically named page, check for single letter
-			curPage = curPage.substr( 0, curPage.indexOf("-") );
-			curPage = {
-				page: curPage.substr( 0, 1 ),
-				id: curPage.substr( 1 )
-			};
-			switch( curPage.page ) {
-				case "t": { // topic
-					curPage.page = "Topic";
-					break;
-				}
-				case "h": { // html page
-					curPage.page = "HTML Page";
-					break;
-				}
-				case "f": { // forum; NOT (!) home page
-					curPage.page = "Forum";
-					break;
-				}
-				case "c": { // category
-					curPage.page = "Category";
-					break;
-				}
-				default: { // some erroneous case, just break
-					break;
-				}
-			}
-			window.fmAPI._pageDetails.current = curPage;
-		}
-	}
-};
-window.fmAPI._setPageData = function(obj){ // use when switching page dynamically
-	window.fmAPI._pageDetails.current = obj;
-	return window.fmAPI._pageDetails;
-};
-window.fmAPI.pageSwitch = function(str,obj){ // switch page dynamically
-	window.fmAPI._setPageData(obj);
-	$.get(str,function(html){
-		document.documentElement.innerHTML = html;
-	});
-};
-window.fmAPI.getPosts = function(){ // get posts from topic if we're currently viewing a topic
-	if( window.fmAPI._pageDetails.current.page == "Topic" ) {
-		var def = window.fmAPI._getDefaultPosts(window.fmAPI_config.version); // test for default versions
-		if( def.length === 0 ) {
-			def = window.fmAPI._getCustomPosts(); // if no default version, look up custom post bodies
-		}
-		return def;
-	} else { // if we're not in a topic, just return an empty object
-		return {};
-	}
-};
-window.fmAPI._getDefaultPosts = function(vers){
-	var posts;
-	switch( vers ) { // test for versions
-		case "PunBB": { // PunBB
-			posts = $('div.postmain');
-			break;
-		}
-		case "Invision": { // Invision; placeholder
-			break;
-		}
-		case "phpBB 2": { // phpBB 2; placeholder
-			break;
-		}
-		case "phpBB 3": { // phpBB 3; placeholder
-			break;
-		}
-	}
-	return posts;
-};
+(function(thisContext) {
+    function _F() {
+        return this.init();
+    }
+    var _f = {
+        constructor: _F,
+        toString: function() {
+            return "[object fmAPI]";
+        },
+        init: function() {
+            this.pageData = this.getPageData();
+            return this;
+        },
+        getPageData: function() { // parse URL and return pageData object
+            var currentPage = window.location.pathname,
+                pageData = {
+                    current: "Home Page" // assume Home Page as default
+                };
+            if (currentPage === "/") {
+                return pageData;
+            } else {
+                currentPage = currentPage.substr(currentPage.indexOf("/") + 1);
+                if (currentPage === "forum") {
+                    pageData.current = "Forum Overview";
+                } else if (currentPage === "portal") {
+                    pageData.current = "Forum Portal";
+                } else if (currentPage === "search") {
+                    pageData.current = "Search Page";
+                } else if (currentPage === "faq") {
+                    pageData.current = "FAQ";
+                } else if (currentPage === "memberlist") {
+                    pageData.current = "Forum Memberlist";
+                } else if (currentPage === "groups") {
+                    pageData.current = "Forum Groups";
+                } else if (currentPage === "profile") {
+                    pageData.current = "Profile Page";
+                } else if (currentPage === "privmsg") {
+                    pageData.current = "Private Messaging";
+                } else if (currentPage === "login") {
+                    pageData.current = "Login Page";
+                } else if (currentPage === "post") {
+                    pageData.current = "Post Page";
+                } else if (currentPage === "chatbox") { // global JS won't apply to /chatbox -- rudimentary support for future implementation
+                    pageData.current = "Forum Chatbox";
+                } else {
+                    currentPage = currentPage.substr(0, currentPage.indexOf("-"));
+                    pageData.current = {
+                        page: currentPage.substr(0, 1),
+                        id: currentPage.substr(1)
+                    };
+                    if (pageData.current.page === "t") {
+                        pageData.current.page = "Topic";
+                    } else if (pageData.current.page === "h") {
+                        pageData.current.page = "HTML Page";
+                    } else if (pageData.current.page === "f") {
+                        pageData.current.page = "Sub-Forum";
+                    } else if (pageData.current.page === "c") {
+                        pageData.current.page = "Category";
+                    } else if (pageData.current.page === "u") {
+                        pageData.current.page = "Member Profile";
+                    } else {
+                        /**
+                         *
+                         * Since fmAPI was built to be the foundation for all other JavaScript, and in case other apps depend on it, script execution will resume
+                         * although fmAPI cannot parse the current page data.
+                         *
+                         * This special case is identifiable through the `fmAPI.pageData` property:
+                         * if it is `null`, and only then, fmAPI was not able to parse the page.
+                         *
+                         * If your forum requires fmAPI for apps and the functionality is crucial, consider testing for this case to prevent uncaught errors.
+                         *
+                         */
+                        pageData = null;
+                    }
+                }
+            }
+            return pageData;
+        },
+        setProperty: function(property, value) {
+            if (!(property in this)) {
+                this[property] = value;
+            } else {
+                this.log("`fmAPI.setProperty` cannot be used to redefine already set properties. Use `fmAPI.updateProperty` instead.");
+            }
+            return this;
+        },
+        getProperty: function(property) {
+            return this[property];
+        },
+        updateProperty: function(property, value) {
+            if (property in this && typeof this[property] !== "function") {
+                this[property] = value;
+            } else {
+                this.log("`fmAPI.updateProperty` cannot be used to modify existing methods or set new properties.");
+            }
+            return this;
+        },
+        getURL: function(url, callback, isjQuery) {
+            jQuery.get("/" + url, function(data, txtStatus, jqXHR) {
+                if (isjQuery) {
+                    callback(jQuery(data), txtStatus, jqXHR);
+                } else {
+                    callback(data, txtStatus, jqXHR);
+                }
+            });
+        }
+    };
+    _F.prototype = _f;
+    thisContext.fmAPI = new _F();
+})(this);
