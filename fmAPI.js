@@ -12,52 +12,79 @@
             return this;
         },
         getPageData: function() { // parse URL and return pageData object
-            var currentPage = window.location.pathname,
+            var currentURL = window.location.pathname,
                 pageData = {
                     current: "Home Page" // assume Home Page as default
                 };
-            if (currentPage === "/") {
+            if (currentURL === "/") {
                 return pageData;
             } else {
-                currentPage = currentPage.substr(currentPage.indexOf("/") + 1);
-                if (currentPage === "forum") {
+                currentURL = currentURL.substr(currentURL.indexOf("/") + 1);
+                if (currentURL === "forum") {
                     pageData.current = "Forum Overview";
-                } else if (currentPage === "portal") {
+                } else if (currentURL === "portal") {
                     pageData.current = "Forum Portal";
-                } else if (currentPage === "search") {
+                } else if (currentURL === "search") {
                     pageData.current = "Search Page";
-                } else if (currentPage === "faq") {
+                } else if (currentURL === "faq") {
                     pageData.current = "FAQ";
-                } else if (currentPage === "memberlist") {
+                } else if (currentURL === "memberlist") {
                     pageData.current = "Forum Memberlist";
-                } else if (currentPage === "groups") {
+                } else if (currentURL === "groups") {
                     pageData.current = "Forum Groups";
-                } else if (currentPage === "profile") {
+                } else if (currentURL === "profile") {
                     pageData.current = "Profile Page";
-                } else if (currentPage === "privmsg") {
+                } else if (currentURL === "privmsg") {
                     pageData.current = "Private Messaging";
-                } else if (currentPage === "login") {
+                } else if (currentURL === "login") {
                     pageData.current = "Login Page";
-                } else if (currentPage === "post") {
+                } else if (currentURL === "post") {
                     pageData.current = "Post Page";
-                } else if (currentPage === "chatbox") { // global JS won't apply to /chatbox -- rudimentary support for future implementation
+                } else if (currentURL === "chatbox") { // global JS won't apply to /chatbox -- rudimentary support for future implementation
                     pageData.current = "Forum Chatbox";
                 } else {
-                    currentPage = currentPage.substr(0, currentPage.indexOf("-"));
+                    var type = currentURL.substr(0, 1);
                     pageData.current = {
-                        page: currentPage.substr(0, 1),
-                        id: currentPage.substr(1)
+                        type: type,
+                        id: null
                     };
-                    if (pageData.current.page === "t") {
-                        pageData.current.page = "Topic";
-                    } else if (pageData.current.page === "h") {
-                        pageData.current.page = "HTML Page";
-                    } else if (pageData.current.page === "f") {
-                        pageData.current.page = "Sub-Forum";
-                    } else if (pageData.current.page === "c") {
-                        pageData.current.page = "Category";
-                    } else if (pageData.current.page === "u") {
-                        pageData.current.page = "Member Profile";
+                    if (type === "t") {
+                        pageData.current.type = "Topic";
+                        type = currentURL.substr(0, currentURL.indexOf("-")); // RE-ASSIGN `type` VALUE
+                        if (type.indexOf("p") > -1) {
+                            type = type.split("p");
+                            pageData.current.id = type[0].substr(1);
+                            pageData.current.page = type[1];
+                        } else {
+                            pageData.current.id = type.substr(1);
+                        }
+                    } else if (type === "h") {
+                        pageData.current.type = "HTML Page";
+                        pageData.current.id = currentURL.substr(1, currentURL.indexOf("-"));
+                    } else if (type === "f") {
+                        pageData.current.type = "Sub-Forum";
+                        type = currentURL.substr(0, currentURL.indexOf("-")); // RE-ASSIGN `type` VALUE
+                        if (type.indexOf("p") > -1) {
+                            type = type.split("p");
+                            pageData.current.id = type[0].substr(1);
+                            pageData.current.page = type[1];
+                        } else {
+                            pageData.current.id = type.substr(1);
+                        }
+                    } else if (type === "c") {
+                        pageData.current.type = "Category";
+                        pageData.current.id = currentURL.substr(1, currentURL.indexOf("-"));
+                    } else if (type === "u") {
+                        pageData.current.type = "Member Profile";
+                        var regex = /(wall|friends|stats|contact)/i,
+                            subPage;
+                        if (regex.test(currentURL)) {
+                            subPage = currentURL.split(regex);
+                            pageData.current.id = subPage[0].substr(1);
+                            pageData.current.page = subPage[1][0].toUpperCase() + subPage[1].substr(1);
+                        } else {
+                            pageData.current.id = currentURL.substr(1);
+                        }
                     } else {
                         /**
                          *
@@ -94,6 +121,10 @@
                 this.log("`fmAPI.updateProperty` cannot be used to modify existing methods or set new properties.");
             }
             return this;
+        },
+        log: function() {
+            // stub, expand later
+            console.log(arguments);
         },
         getURL: function(url, callback, isjQuery) {
             jQuery.get("/" + url, function(data, txtStatus, jqXHR) {
