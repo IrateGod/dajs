@@ -1,0 +1,21 @@
+{
+    "matches": [{
+        "winner": "Irate",
+        "loser": "STX"
+    }, {
+        "winner": "STX",
+        "loser": "KawaiiMiku"
+    }, {
+        "winner": "KawaiiMiku",
+        "loser": "Irate"
+    }, {
+        "winner": "Irate",
+        "loser": "STX"
+    }, {
+        "winner": "Irate",
+        "loser": "KawaiiMiku"
+    }, {
+        "winner": "STX",
+        "loser": "Irate"
+    }]
+}
