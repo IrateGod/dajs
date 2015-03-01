@@ -1,28 +1,23 @@
 var rankMap = {
-    0: {
-        rank: "Slifer Red",
-        elo: 1000
+        0: {
+            rank: "Slifer Red",
+            elo: 500
+        },
+        1: {
+            rank: "Ra Yellow",
+            elo: 750
+        },
+        2: {
+            rank: "Obelisk Blue",
+            elo: 1000,
+        }
     },
-    1: {
-        rank: "Ra Yellow",
-        elo: 1500
-    },
-    2: {
-        rank: "Obelisk Blue",
-        elo: 2000,
-    },
-    3: {
-        rank: "Abandoned Dark",
-        elo: 2500
-    }
-};
-var dbTopic = "league.html",
-    hPage = "/h22-",
-    entries = [],
+    dbTopic = "/t43082-",
+    entries = {},
     matches = [],
     entry,
-    lastCached = localStorage.lastCached,
-    lastEdit = localStorage.lastEdit;
+    iter,
+    sortArray = [];
 
 function calculateNewElo(opts) {
     if (!opts) {
@@ -50,7 +45,7 @@ function calculateNewElo(opts) {
     } else if (rankDifference < 0) {
         pointsGained = (rankDifference == -2) ? Math.round(staticPointsGained * 2) : Math.round(staticPointsGained * 1.5);
         pointsLost = pointsGained;
-    } else if (rankDifference == 0) {
+    } else if (rankDifference === 0) {
         pointsGained = staticPointsGained;
         pointsLost = staticPointsLost;
     }
@@ -75,43 +70,53 @@ function calculateNewElo(opts) {
     newWinnerElo = previousWinnerElo + pointsGained;
     newLoserElo = previousLoserElo - pointsLost;
     entries[opts.winner].elo = newWinnerElo;
+    entries[opts.winner].winratio = winnerWLString;
+    entries[opts.winner].winratioFloat = winnerWLRatio;
     entries[opts.loser].elo = newLoserElo;
+    entries[opts.loser].winratio = loserWLString;
+    entries[opts.loser].winratioFloat = loserWLRatio;
     console.log(previousWinnerElo, previousLoserElo, staticPointsGained, staticPointsLost, pointsGained, pointsLost, newWinnerElo, newLoserElo, rankDifference, winnerWLRatio, loserWLRatio, winnerWLString, loserWLString);
 }
 $(function() {
-    if (lastCached > lastEdit) {
-        console.log("No modifications made to rankings.");
-    } else {
-        // localStorage.lastCached = Date.now();
-        $.get(dbTopic, function(data, status, xhr) {
-            if (xhr.status !== 200) {
-                console.log('HTTP Request failed with Error Status of ' + xhr.status + ', please check your connection settings or connect your system administrator.');
+    $.get(dbTopic, function(data, status, xhr) {
+        if (xhr.status !== 200) {
+            console.log('HTTP Request failed with Error Status of ' + xhr.status + ', please check your connection settings or connect your system administrator.');
+        }
+        data = $(data);
+        entries = $.parseJSON($('#entryTable td', data).html().replace(/<br>/gi, ''));
+        matches = $.parseJSON($('#matchTable td', data).html().replace(/<br>/gi, '')).matches;
+        for (entry in entries) {
+            entries[entry].elo = rankMap[entries[entry].rank].elo;
+            entries[entry].wins = 0;
+            entries[entry].losses = 0;
+            entries[entry].username = entry;
+        }
+        matches.forEach(function(v) {
+            if (!v.winner || !v.loser) {
+                console.log('Invalid entry; winner or loser not given.');
+            } else if (!(v.winner in entries)) {
+                console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; winner not registered in database.');
+            } else if (!(v.loser in entries)) {
+                console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; loser not registered in database.');
+            } else {
+                entries[v.winner].wins++;
+                entries[v.loser].losses++;
+                calculateNewElo({
+                    winner: v.winner,
+                    loser: v.loser
+                });
             }
-            data = $(data);
-            entries = $.parseJSON(data[7].innerHTML);
-            matches = $.parseJSON(data[9].innerHTML).matches;
-            for (entry in entries) {
-                entries[entry].elo = rankMap[entries[entry].rank].elo;
-                entries[entry].wins = 0;
-                entries[entry].losses = 0;
-            }
-            matches.forEach(function(v) {
-                if (!v.winner || !v.loser) {
-                    console.log('Invalid entry; winner or loser not given.');
-                } else if (!(v.winner in entries)) {
-                    console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; winner not registered in database.');
-                } else if (!(v.loser in entries)) {
-                    console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; loser not registered in database.');
-                } else {
-                    document.body.innerHTML += '<div class="textNotice">User "' + v.winner + '" won versus "' + v.loser + '"; calculated new Elo.</div>';
-                    entries[v.winner].wins++;
-                    entries[v.loser].losses++;
-                    calculateNewElo({
-                        winner: v.winner,
-                        loser: v.loser
-                    });
-                }
-            });
         });
-    }
+        for (iter in entries) {
+            sortArray.push(entries[iter]);
+        }
+        sortArray = sortArray.sort(function(a, b) {
+            return b.winratioFloat - a.winratioFloat;
+        });
+        sortArray.forEach(function(v, i) {
+            $('#eloDisplay tbody').append('<tr class="rankingTable rank_' + (i + 1) + '"><td class="rankingtable_user">' + v.username + '</td><td class="rankingtable_wins">' + v.wins + '</td><td class="rankingtable_losses">' + v.losses + '</td><td class="rankingtable_winrat">' + v.winratio + '</td></tr>');
+        $('#loading').css('display','none');
+        $('#table_head').css('display','block');
+        });
+    });
 });
