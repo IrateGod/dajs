@@ -71,11 +71,8 @@ function calculateNewElo(opts) {
     newLoserElo = previousLoserElo - pointsLost;
     entries[opts.winner].elo = newWinnerElo;
     entries[opts.winner].winratio = winnerWLString;
-    entries[opts.winner].winratioFloat = winnerWLRatio;
     entries[opts.loser].elo = newLoserElo;
     entries[opts.loser].winratio = loserWLString;
-    entries[opts.loser].winratioFloat = loserWLRatio;
-    console.log(previousWinnerElo, previousLoserElo, staticPointsGained, staticPointsLost, pointsGained, pointsLost, newWinnerElo, newLoserElo, rankDifference, winnerWLRatio, loserWLRatio, winnerWLString, loserWLString);
 }
 $(function() {
     $.get(dbTopic, function(data, status, xhr) {
@@ -111,12 +108,12 @@ $(function() {
             sortArray.push(entries[iter]);
         }
         sortArray = sortArray.sort(function(a, b) {
-            return b.winratioFloat - a.winratioFloat;
+            return b.elo - a.elo;
         });
         sortArray.forEach(function(v, i) {
-            $('#eloDisplay tbody').append('<tr class="rankingTable rank_' + (i + 1) + '"><td class="rankingtable_user">' + v.username + '</td><td class="rankingtable_wins">' + v.wins + '</td><td class="rankingtable_losses">' + v.losses + '</td><td class="rankingtable_winrat">' + v.winratio + '</td></tr>');
+            $('#eloDisplay tbody').append('<tr class="rankingTable rank_' + (i + 1) + '"><td class="rankingTableUser">' + v.username + '</td><td class="rankingTableWins">' + v.wins + '</td><td class="rankingTableLosses">' + v.losses + '</td><td class="rankingTableElo">' + v.elo + '</td></tr>');
         $('#loading').css('display','none');
-        $('#table_head').css('display','block');
+        $('#tableHead').css('display','block');
         });
     });
 });
