@@ -12,7 +12,7 @@ var rankMap = {
             elo: 1000,
         }
     },
-    dbTopic = "/t43082-",
+    dbTopic = "/t41235-",
     entries = {},
     matches = [],
     entry,
