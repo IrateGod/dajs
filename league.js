@@ -9,7 +9,11 @@ var rankMap = {
         },
         2: {
             rank: "Obelisk Blue",
-            elo: 1000,
+            elo: 1000
+        },
+        3: {
+            rank: "Society of Light",
+            elo: 1250
         }
     },
     dbTopic = "/t41235-",
@@ -38,14 +42,15 @@ function calculateNewElo(opts) {
         winnerWLString = winnerWLRatio.toFixed(1).replace(/\.0$/, '') + '%',
         loserWLString = loserWLRatio.toFixed(1).replace(/\.0$/, '') + '%',
         hardCapGainPercentage = 60,
-        hardCapLossPercentage = 40;
-    if (rankDifference > 0) {
+        hardCapLossPercentage = 40,
+        ifClauseDebugVar;
+    if (rankDifference > 0) { // higher rank won vs lower rank 
         pointsGained = Math.floor(staticPointsGained / (rankDifference + (rankDifference * 0.1)));
-        pointsLost = (rankDifference == 2) ? Math.floor(pointsGained / 2) : Math.ceil(pointsGained / 2);
-    } else if (rankDifference < 0) {
-        pointsGained = (rankDifference == -2) ? Math.round(staticPointsGained * 2) : Math.round(staticPointsGained * 1.5);
+        pointsLost = (rankDifference >= 2) ? Math.floor(pointsGained / rankDifference) : Math.ceil(pointsGained / 2);
+    } else if (rankDifference < 0) { // lower rank won vs higher rank
+        pointsGained = (rankDifference <= -2) ? Math.round(staticPointsGained * Math.abs(rankDifference)) : Math.round(staticPointsGained * 1.5);
         pointsLost = pointsGained;
-    } else if (rankDifference === 0) {
+    } else if (rankDifference === 0) { // same rank
         pointsGained = staticPointsGained;
         pointsLost = staticPointsLost;
     }
@@ -58,12 +63,13 @@ function calculateNewElo(opts) {
     } else if (Math.round(winnerWLRatio) <= 50) {
         pointsGained = pointsGained - (Math.round(50 - winnerWLRatio));
     }
+	pointsGained = (pointsGained <= 0) ? 1 : pointsGained;
     if (Math.round(loserWLRatio) > hardCapGainPercentage) {
         pointsLost = pointsLost - 10;
     } else if (Math.round(loserWLRatio) < hardCapLossPercentage) {
         pointsLost = pointsLost + 10;
     } else if (Math.round(loserWLRatio) >= 50) {
-        pointsLost = pointsLost - (Math.round(winnerWLRatio - 50));
+        pointsLost = pointsLost - (Math.round(loserWLRatio - 50));
     } else if (Math.round(loserWLRatio) <= 50) {
         pointsLost = pointsLost + (Math.round(50 - loserWLRatio));
     }
@@ -112,8 +118,8 @@ $(function() {
         });
         sortArray.forEach(function(v, i) {
             $('#eloDisplay tbody').append('<tr class="rankingTable rank_' + (i + 1) + '"><td class="rankingTableUser">' + v.username + '</td><td class="rankingTableWins">' + v.wins + '</td><td class="rankingTableLosses">' + v.losses + '</td><td class="rankingTableElo">' + v.elo + '</td></tr>');
-        $('#loading').css('display','none');
-        $('#tableHead').css('display','block');
         });
+        $('#loading').css('display', 'none');
+        $('#tableHead').css('display', 'block');
     });
 });
