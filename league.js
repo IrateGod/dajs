@@ -102,8 +102,14 @@ function calculateNewElo(opts) {
         loserWLString = loserWLRatio.toFixed(1).replace(/\.0$/, '') + '%',
         hardCapGainPercentage = 60,
         hardCapLossPercentage = 40;
-    entries[opts.winner].winLossHistory.push(1);
-    entries[opts.loser].winLossHistory.push(0);
+    entries[opts.winner].winLossHistory.push({
+        status: 1,
+        versus: opts.loser
+    });
+    entries[opts.loser].winLossHistory.push({
+        status: 0,
+        versus: opts.winner
+    });
     if (rankDifference > 0) { // higher rank won vs lower rank 
         pointsGained = Math.floor(staticPointsGained / (rankDifference + (rankDifference * 0.1)));
         pointsLost = (rankDifference >= 2) ? Math.floor(pointsGained / rankDifference) : Math.ceil(pointsGained / 2);
@@ -151,6 +157,8 @@ function calculateNewElo(opts) {
     entries[opts.winner].winratio = winnerWLString;
     entries[opts.loser].elo = newLoserElo;
     entries[opts.loser].winratio = loserWLString;
+    entries[opts.winner].eloDifference = newWinnerElo - rankMap.map(entries[opts.winner].rankID).elo;
+    entries[opts.loser].eloDifference = newLoserElo - rankMap.map(entries[opts.loser].rankID).elo;
 }
 
 function makeTable(sourceArray) {
@@ -197,6 +205,7 @@ $(function() {
                 entries[entry].higherLost = 0;
                 entries[entry].lowerLost = 0;
                 entries[entry].equalLost = 0;
+                entries[entry].eloDifference = 0;
                 entries[entry].winLossHistory = [];
                 // end of statistics
             }
