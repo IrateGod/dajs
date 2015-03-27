@@ -1,3 +1,4 @@
+/* global $ */
 function Map(o) {
     var p;
     if (!(this instanceof Map)) {
@@ -161,6 +162,47 @@ function calculateNewElo(opts) {
     entries[opts.loser].eloDifference = newLoserElo - rankMap.map(entries[opts.loser].rankID).elo;
 }
 
+function createWinLossStreak(user) {
+    if (!user.winLossHistory || user.winLossHistory.length === 0) {
+        return null;
+    }
+    var index = 0,
+        arrayLength = user.winLossHistory.length,
+        returnObject = {
+            wins: [],
+            losses: []
+        },
+        count = 0,
+        statusString, temp, previousTemp, samePlayed = {};
+    for (index, arrayLength; index < arrayLength; index++) {
+        temp = user.winLossHistory[index];
+        previousTemp = user.winLossHistory[index - 1];
+        if (samePlayed[temp.versus] === undefined) {
+            samePlayed[temp.versus] = 1;
+        } else {
+            samePlayed[temp.versus]++;
+        }
+        if (i === 0) {
+            count = 1;
+            statusString = (temp.status === 1) ? "wins" : "losses";
+            continue;
+        }
+        if (previousTemp.status && (temp.status === previousTemp.status)) {
+            count++;
+        } else {
+            returnObject[statusString].push(count);
+            count = 1;
+            statusString = (temp.status === 1) ? "wins" : "losses";
+        }
+        if (index === arrayLength) {
+            returnObject[statusString].push(count);
+        }
+    }
+    user.highestWinStreak = Math.max.apply({}, o.wins);
+    user.highestLossStreak = Math.max.apply({}, o.losses);
+    return user;
+}
+
 function makeTable(sourceArray) {
     var returnHTML = "";
     sourceArray.forEach(function(v, i) {
@@ -206,6 +248,8 @@ $(function() {
                 entries[entry].lowerLost = 0;
                 entries[entry].equalLost = 0;
                 entries[entry].eloDifference = 0;
+                entries[entry].highestWinStreak = 0;
+                entries[entry].highestLossStreak = 0;
                 entries[entry].winLossHistory = [];
                 // end of statistics
             }
@@ -230,6 +274,7 @@ $(function() {
         });
         for (iter in entries) {
             if (entries.hasOwnProperty(iter) && entries.propertyIsEnumerable(iter)) {
+                createWinLossHistory(entries[iter]);
                 sortArray.push(entries[iter]);
             }
         }
