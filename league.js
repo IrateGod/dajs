@@ -182,24 +182,31 @@ function createWinLossStreak(user) {
         } else {
             samePlayed[temp.versus]++;
         }
-        if (i === 0) {
+        if (index === 0) {
             count = 1;
             statusString = (temp.status === 1) ? "wins" : "losses";
             continue;
         }
-        if (previousTemp.status && (temp.status === previousTemp.status)) {
+        if (previousTemp && (temp.status === previousTemp.status)) {
             count++;
         } else {
             returnObject[statusString].push(count);
             count = 1;
             statusString = (temp.status === 1) ? "wins" : "losses";
         }
-        if (index === arrayLength) {
+        if (index === arrayLength - 1) {
             returnObject[statusString].push(count);
         }
     }
-    user.highestWinStreak = Math.max.apply({}, o.wins);
-    user.highestLossStreak = Math.max.apply({}, o.losses);
+    if (!returnObject.wins.length) {
+        returnObject.wins = [0];
+    }
+    if (!returnObject.losses.length) {
+        returnObject.losses = [0];
+    }
+    user.samePlayed = samePlayed;
+    user.highestWinStreak = Math.max.apply({}, returnObject.wins);
+    user.highestLossStreak = Math.max.apply({}, returnObject.losses);
     return user;
 }
 
@@ -274,7 +281,7 @@ $(function() {
         });
         for (iter in entries) {
             if (entries.hasOwnProperty(iter) && entries.propertyIsEnumerable(iter)) {
-                createWinLossHistory(entries[iter]);
+                createWinLossStreak(entries[iter]);
                 sortArray.push(entries[iter]);
             }
         }
