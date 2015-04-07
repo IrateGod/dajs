@@ -228,6 +228,48 @@ function sortAfter(sourceArray, sortString, ascDesc) {
     });
 }
 
+function adjustRank(user){
+    var id = user.rankID;
+    switch(id) {
+            case 0: {
+                if(user.elo > rankMap.map(1).elo) {
+                    id = 1;
+                }
+                break;
+            }
+            case 1: {
+                if(user.elo > rankMap.map(2).elo) {
+                    id = 2;
+                }
+                if(user.elo < rankMap.map(0).elo) {
+                    id = 0;
+                }
+                break;
+            }
+            case 2: {
+                if(user.elo > rankMap.map(3).elo) {
+                    id = 3;
+                }
+                if(user.elo < rankMap.map(1).elo) {
+                    id = 1;
+                }
+                break;
+            }
+            case 3: {
+                if(user.elo < rankMap.map(2).elo) {
+                    id = 2;
+                }
+                break;
+            }
+            default: {
+                console.log("No user specified to update.");
+                break;
+            }
+    }
+    user.rankID = id;
+    return user;
+}
+
 $(function() {
     $.get(dbTopic, function(data, status, xhr) {
         if (xhr.status !== 200) {
@@ -277,6 +319,8 @@ $(function() {
                     winner: v.winner,
                     loser: v.loser
                 });
+                // adjustRank(v.winner);
+                // adjustRank(v.loser);
             }
         });
         for (iter in entries) {
