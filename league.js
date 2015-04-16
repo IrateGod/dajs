@@ -1,4 +1,23 @@
-/* global $ */
+/*****************************************
+ *
+ * DA Circuit
+ *
+ * Developed by Irate in 2015
+ *
+ * Copyright by Duel Academy - duelacademy.net
+ *
+ *****************************************
+ **/
+"use strict"; // require global strict
+
+(function(o) {
+    var noES5 = false;
+    if (!Object.hasOwnProperty || !Object.propertyIsEnumerable || !Object.create || !Object.keys || !Object.freeze || !Array.prototype.forEach || !Array.prototype.sort) {
+        noES5 = true;
+    }
+    o.noES5 = noES5;
+})(window);
+
 function Map(o) {
     var p;
     if (!(this instanceof Map)) {
@@ -158,8 +177,8 @@ function calculateNewElo(opts) {
     entries[opts.winner].winratio = winnerWLString;
     entries[opts.loser].elo = newLoserElo;
     entries[opts.loser].winratio = loserWLString;
-    entries[opts.winner].eloDifference = newWinnerElo - rankMap.map(entries[opts.winner].rankID).elo;
-    entries[opts.loser].eloDifference = newLoserElo - rankMap.map(entries[opts.loser].rankID).elo;
+    entries[opts.winner].eloDifference = newWinnerElo - rankMap.map((entries[opts.winner].lastDataCopies[0] && entries[opts.winner].lastDataCopies[0].rankID || entries[opts.winner].rankID)).elo;
+    entries[opts.loser].eloDifference = newLoserElo - rankMap.map((entries[opts.loser].lastDataCopies[0] && entries[opts.loser].lastDataCopies[0].rankID || entries[opts.loser].rankID)).elo;
 }
 
 function createWinLossStreak(user) {
@@ -228,40 +247,45 @@ function sortAfter(sourceArray, sortString, ascDesc) {
     });
 }
 
-function adjustRank(user){
+function adjustRank(user) {
     var id = user.rankID;
-    switch(id) {
-            case 0: {
-                if(user.elo > rankMap.map(1).elo) {
+    switch (id) {
+        case 0:
+            {
+                if (user.elo > rankMap.map(1).elo) {
                     id = 1;
                 }
                 break;
             }
-            case 1: {
-                if(user.elo > rankMap.map(2).elo) {
+        case 1:
+            {
+                if (user.elo > rankMap.map(2).elo) {
                     id = 2;
                 }
-                if(user.elo < rankMap.map(0).elo) {
+                if (user.elo < rankMap.map(0).elo) {
                     id = 0;
                 }
                 break;
             }
-            case 2: {
-                if(user.elo > rankMap.map(3).elo) {
+        case 2:
+            {
+                if (user.elo > rankMap.map(3).elo) {
                     id = 3;
                 }
-                if(user.elo < rankMap.map(1).elo) {
+                if (user.elo < rankMap.map(1).elo) {
                     id = 1;
                 }
                 break;
             }
-            case 3: {
-                if(user.elo < rankMap.map(2).elo) {
+        case 3:
+            {
+                if (user.elo < rankMap.map(2).elo) {
                     id = 2;
                 }
                 break;
             }
-            default: {
+        default:
+            {
                 console.log("No user specified to update.");
                 break;
             }
@@ -270,76 +294,99 @@ function adjustRank(user){
     return user;
 }
 
-$(function() {
-    $.get(dbTopic, function(data, status, xhr) {
-        if (xhr.status !== 200) {
-            console.log('Error "' + status + '"\nHTTP Request failed with Error Status of ' + xhr.status + ', please check your connection settings or connect your system administrator.');
-        }
-        data = $(data);
-        entries = $.parseJSON($('#entryTable td', data).html().replace(/<br>/gi, ''));
-        matches = $.parseJSON($('#matchTable td', data).html().replace(/<br>/gi, '')).matches;
-        for (entry in entries) {
-            if (entries.hasOwnProperty(entry) && entries.propertyIsEnumerable(entry)) {
-                entries[entry].username = entry;
-                entries[entry].rankID = rankMap.map(entries[entry].rank).rankID;
-                entries[entry].elo = rankMap.map(entries[entry].rank).elo;
-                entries[entry].wins = 0;
-                entries[entry].losses = 0;
-                // data for statistics below
-                entries[entry].gamesPlayed = 0;
-                entries[entry].higherPlayed = 0;
-                entries[entry].lowerPlayed = 0;
-                entries[entry].equalPlayed = 0;
-                entries[entry].higherWon = 0;
-                entries[entry].lowerWon = 0;
-                entries[entry].equalWon = 0;
-                entries[entry].higherLost = 0;
-                entries[entry].lowerLost = 0;
-                entries[entry].equalLost = 0;
-                entries[entry].eloDifference = 0;
-                entries[entry].highestWinStreak = 0;
-                entries[entry].highestLossStreak = 0;
-                entries[entry].winLossHistory = [];
-                // end of statistics
-            }
-        }
-        matches.forEach(function(v) {
-            if (!v.winner || !v.loser) {
-                console.log('Invalid entry; winner or loser not given.');
-            } else if (!(v.winner in entries)) {
-                console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; winner not registered in database.');
-            } else if (!(v.loser in entries)) {
-                console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; loser not registered in database.');
-            } else {
-                entries[v.winner].wins++;
-                entries[v.loser].losses++;
-                entries[v.winner].gamesPlayed++;
-                entries[v.loser].gamesPlayed++;
-                calculateNewElo({
-                    winner: v.winner,
-                    loser: v.loser
-                });
-                // adjustRank(v.winner);
-                // adjustRank(v.loser);
-            }
+function createDataCopy(user) {
+    var userCopy = Object.create({}),
+        userKeys = Object.keys(user);
+    userKeys.forEach(function(v) {
+        Object.defineProperty(userCopy, v, {
+            enumerable: true,
+            writeable: true,
+            configurable: true,
+            value: user[v]
         });
-        for (iter in entries) {
-            if (entries.hasOwnProperty(iter) && entries.propertyIsEnumerable(iter)) {
-                createWinLossStreak(entries[iter]);
-                sortArray.push(entries[iter]);
-            }
-        }
-        $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, "elo", true)));
-        $('#loading').css('display', 'none');
-        $('#tableHead').css('display', 'block');
-        /*$('div[class^="ranking"]').on('click', function(e) {
-            if ($(this).hasClass('asc')) {
-                $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, $(this).removeClass('asc').attr('class').split('ranking')[0], false)));
-                $(this).addClass('desc');
-            } else {
-                $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, $(this).removeClass('desc').attr('class').split('ranking')[0], true)));
-                $(this).addClass('asc');
-            }
-        });*/
     });
+    userCopy.hasOwnProperty("lastDataCopies") && delete userCopy.lastDataCopies;
+    return userCopy;
+}
+
+$(function() {
+    if (window.noES5) {
+        $('#loading').html('<span class="fatal">We have detected a fatal error: your browser does not support EcmaScript 5 features. Download a new browser or update your current browser to view this page.</span>');
+    } else {
+        $.get(dbTopic, function(data, status, xhr) {
+            if (xhr.status !== 200) {
+                console.log('Error "' + status + '"\nHTTP Request failed with Error Status of ' + xhr.status + ', please check your connection settings or connect your system administrator.');
+            }
+            data = $(data);
+            entries = $.parseJSON($('#entryTable td', data).html().replace(/<br>/gi, ''));
+            matches = $.parseJSON($('#matchTable td', data).html().replace(/<br>/gi, '')).matches;
+            for (entry in entries) {
+                if (entries.hasOwnProperty(entry) && entries.propertyIsEnumerable(entry)) {
+                    entries[entry].username = entry;
+                    entries[entry].rankID = rankMap.map(entries[entry].rank).rankID;
+                    entries[entry].elo = rankMap.map(entries[entry].rank).elo;
+                    entries[entry].wins = 0;
+                    entries[entry].losses = 0;
+                    // data for statistics below
+                    entries[entry].gamesPlayed = 0;
+                    entries[entry].higherPlayed = 0;
+                    entries[entry].lowerPlayed = 0;
+                    entries[entry].equalPlayed = 0;
+                    entries[entry].higherWon = 0;
+                    entries[entry].lowerWon = 0;
+                    entries[entry].equalWon = 0;
+                    entries[entry].higherLost = 0;
+                    entries[entry].lowerLost = 0;
+                    entries[entry].equalLost = 0;
+                    entries[entry].eloDifference = 0;
+                    entries[entry].highestWinStreak = 0;
+                    entries[entry].highestLossStreak = 0;
+                    entries[entry].winLossHistory = [];
+                    // end of statistics
+                    entries[entry].lastDataCopies = [];
+                }
+            }
+            matches.forEach(function(v, i) {
+                if (!v.winner || !v.loser) {
+                    console.log('Invalid entry; winner or loser not given.');
+                } else if (!(v.winner in entries)) {
+                    console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; winner not registered in database.');
+                } else if (!(v.loser in entries)) {
+                    console.log('Invalid entry for match "' + v.winner + '" versus "' + v.loser + '"; loser not registered in database.');
+                } else {
+                    entries[v.winner].wins++;
+                    entries[v.loser].losses++;
+                    entries[v.winner].gamesPlayed++;
+                    entries[v.loser].gamesPlayed++;
+                    calculateNewElo({
+                        winner: v.winner,
+                        loser: v.loser,
+                        index: i
+                    });
+                    entries[v.winner].lastDataCopies.push(Object.freeze(createDataCopy(entries[v.winner])));
+                    entries[v.loser].lastDataCopies.push(Object.freeze(createDataCopy(entries[v.loser])));
+                    adjustRank(entries[v.winner]);
+                    adjustRank(entries[v.loser]);
+                }
+            });
+            for (iter in entries) {
+                if (entries.hasOwnProperty(iter) && entries.propertyIsEnumerable(iter)) {
+                    createWinLossStreak(entries[iter]);
+                    sortArray.push(entries[iter]);
+                }
+            }
+            $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, "elo", true)));
+            $('#loading').css('display', 'none');
+            $('#tableHead').css('display', 'block');
+            /*$('div[class^="ranking"]').on('click', function(e) {
+                if ($(this).hasClass('asc')) {
+                    $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, $(this).removeClass('asc').attr('class').split('ranking')[0], false)));
+                    $(this).addClass('desc');
+                } else {
+                    $('#eloDisplay tbody').html(makeTable(sortAfter(sortArray, $(this).removeClass('desc').attr('class').split('ranking')[0], true)));
+                    $(this).addClass('asc');
+                }
+            });*/
+        });
+    }
 });
